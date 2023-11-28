@@ -13,7 +13,12 @@ incremental = true
 [profile.release]
 debug = true
 
+[features]
+testing = []
+
 [dependencies]
 aoc_lib = { git = "https://github.com/Measter/aoc_lib.git" }
+chumsky = "1.0.0-alpha.6"
 color-eyre = "0.6.2"
 itertools = "0.12.0"
+logos = "0.13.0"
