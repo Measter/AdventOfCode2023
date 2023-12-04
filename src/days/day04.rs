@@ -84,20 +84,21 @@ fn part2(cards: &[Card]) -> u32 {
         .collect();
 
     let mut num_cards = vec![1; cards.len()];
+    let mut sum = 0;
 
     for (i, &win_count) in win_values.iter().enumerate() {
+        let this_count = num_cards[i];
+        sum += this_count;
+
         if win_count == 0 {
             continue;
         }
-
-        let this_count = num_cards[i];
-
         num_cards[i + 1..][..win_count as usize]
             .iter_mut()
             .for_each(|c| *c += this_count);
     }
 
-    num_cards.into_iter().sum()
+    sum
 }
 
 #[cfg(test)]
