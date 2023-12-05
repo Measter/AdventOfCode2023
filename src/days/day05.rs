@@ -8,9 +8,7 @@ pub const DAY: Day = Day {
     day: 5,
     name: "If You Give A Seed A Fertilizer",
     part_1: run_part1,
-    // Disabled so the bencher doesn't run it.
-    // part_2: Some(run_part2),
-    part_2: None,
+    part_2: Some(run_part2),
     other: &[("Parse", run_parse)],
 };
 
@@ -87,13 +85,17 @@ struct Location;
 #[derive(Debug, Clone, Copy)]
 struct MapInner {
     in_start: u64,
-    in_end: u64,
     out_start: u64,
+    length: u64,
 }
 
 impl MapInner {
-    fn contains(&self, v: u64) -> bool {
-        (self.in_start..self.in_end).contains(&v)
+    fn contains_in(&self, v: u64) -> bool {
+        (self.in_start..self.in_start + self.length).contains(&v)
+    }
+
+    fn contains_out(&self, v: u64) -> bool {
+        (self.out_start..self.out_start + self.length).contains(&v)
     }
 }
 
@@ -114,11 +116,20 @@ impl<T, U> Default for Map<T, U> {
 
 impl<T, U> Map<T, U> {
     fn map(&self, src: Id<T>) -> Id<U> {
-        let Some(m) = self.ranges.iter().find(|m| m.contains(src.0)) else {
+        let Some(m) = self.ranges.iter().find(|m| m.contains_in(src.0)) else {
             return Id::new(src.0);
         };
 
         let new_id = src.0 - m.in_start + m.out_start;
+        Id::new(new_id)
+    }
+
+    fn rev_map(&self, src: Id<U>) -> Id<T> {
+        let Some(m) = self.ranges.iter().find(|m| m.contains_out(src.0)) else {
+            return Id::new(src.0);
+        };
+
+        let new_id = src.0 - m.out_start + m.in_start;
         Id::new(new_id)
     }
 }
@@ -145,6 +156,16 @@ impl Almanac {
         let humidity = self.temperature_to_humidity.map(temp);
         self.humidity_to_location.map(humidity)
     }
+
+    fn location_to_seed(&self, location: Id<Location>) -> Id<Seed> {
+        let humidity = self.humidity_to_location.rev_map(location);
+        let temp = self.temperature_to_humidity.rev_map(humidity);
+        let light = self.light_to_temperature.rev_map(temp);
+        let water = self.water_to_light.rev_map(light);
+        let fert = self.fertilizer_to_water.rev_map(water);
+        let soil = self.soil_to_fertilizer.rev_map(fert);
+        self.seed_to_soil.rev_map(soil)
+    }
 }
 
 fn parse_map<T: Debug, U: Debug>(numbers: &str) -> Map<T, U> {
@@ -164,8 +185,8 @@ fn parse_map<T: Debug, U: Debug>(numbers: &str) -> Map<T, U> {
 
         map.ranges.push(MapInner {
             in_start: src_start,
-            in_end: src_start + length,
             out_start: dest_start,
+            length,
         });
     }
 
@@ -223,15 +244,19 @@ fn part1(almanac: &Almanac) -> u64 {
 }
 
 fn part2(almanac: &Almanac) -> u64 {
-    ArrChunks::new(&almanac.seeds)
-        .map(|[s, l]| s.0..s.0 + l.0)
-        .map(|r| {
-            r.map(Id::new)
-                .map(|s| almanac.seed_to_location(s))
-                .min()
-                .unwrap()
+    let seed_ranges: Vec<_> = ArrChunks::new(&almanac.seeds)
+        .map(|[s, l]| MapInner {
+            in_start: s.0,
+            out_start: s.0,
+            length: l.0,
         })
-        .min()
+        .collect();
+    (0u64..)
+        .map(Id::new)
+        .map(|l| (almanac.location_to_seed(l), l))
+        .filter(|(s, _)| seed_ranges.iter().any(|sr| sr.contains_in(s.0)))
+        .map(|(_, l)| l)
+        .next()
         .unwrap()
         .0
 }
