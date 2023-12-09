@@ -68,9 +68,7 @@ fn solve<const ISP2: bool>(data: &[Vec<i64>]) -> i64 {
         }
 
         if ISP2 {
-            // Why no rreduce!
-            let first = last_nums.pop().unwrap();
-            ans += last_nums.iter().rfold(first, |acc, next| next - acc);
+            ans += last_nums.iter().rfold(0, |acc, next| next - acc);
         } else {
             ans += last_nums.iter().rfold(0, |acc, next| acc + next);
         }
