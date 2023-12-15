@@ -1,4 +1,5 @@
 use aoc_lib::{Bench, BenchResult, Day, NoError};
+use smallvec::SmallVec;
 
 pub const DAY: Day = Day {
     day: 15,
@@ -34,7 +35,7 @@ struct BoxContent<'a> {
 
 #[derive(Debug)]
 struct Map<'a> {
-    boxes: Vec<Vec<BoxContent<'a>>>,
+    boxes: Vec<SmallVec<[BoxContent<'a>; 8]>>,
 }
 
 impl<'a> Map<'a> {
@@ -42,7 +43,7 @@ impl<'a> Map<'a> {
         Self {
             boxes: {
                 let mut v = Vec::new();
-                v.resize_with(256, Vec::new);
+                v.resize_with(256, SmallVec::new);
                 v
             },
         }
