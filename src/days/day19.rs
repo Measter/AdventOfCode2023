@@ -1,9 +1,6 @@
-use std::{
-    collections::HashMap,
-    ops::{Index, IndexMut},
-};
+use std::ops::{Index, IndexMut};
 
-use aoc_lib::{Bench, BenchResult, Day, NoError, ParseResult, UserError};
+use aoc_lib::{misc::IdGen, Bench, BenchResult, Day, NoError, ParseResult, UserError};
 use color_eyre::{Report, Result};
 
 pub const DAY: Day = Day {
@@ -90,66 +87,6 @@ impl Index<WorkFlowId> for WorkFlows {
     }
 }
 
-#[derive(Debug)]
-struct IdGen<'a, T, Id, IdToUsize, UsizeToId> {
-    items: Vec<T>,
-    utoid: IdToUsize,
-    idtou: UsizeToId,
-    map: HashMap<&'a str, Id>,
-}
-
-impl<'a, T, Id, UsizeToId, IdToUsize> IdGen<'a, T, Id, UsizeToId, IdToUsize>
-where
-    T: Default,
-    Id: Copy,
-    UsizeToId: Fn(usize) -> Id,
-    IdToUsize: Fn(Id) -> usize,
-{
-    fn new(utoid: UsizeToId, idtou: IdToUsize) -> Self {
-        Self {
-            items: Vec::new(),
-            utoid,
-            idtou,
-            map: HashMap::new(),
-        }
-    }
-
-    fn id_of(&mut self, id: &'a str) -> Id {
-        if let Some(&id) = self.map.get(id) {
-            return id;
-        }
-
-        let new_id = (self.utoid)(self.map.len());
-        self.items.push(T::default());
-        self.map.insert(id, new_id);
-        new_id
-    }
-}
-
-impl<'a, T, Id, UsizeToId, IdToUsize> Index<Id> for IdGen<'a, T, Id, UsizeToId, IdToUsize>
-where
-    Id: Copy,
-    IdToUsize: Fn(Id) -> usize,
-{
-    type Output = T;
-
-    fn index(&self, index: Id) -> &Self::Output {
-        let idx = (self.idtou)(index);
-        &self.items[idx]
-    }
-}
-
-impl<'a, T, Id, UsizeToId, IdToUsize> IndexMut<Id> for IdGen<'a, T, Id, UsizeToId, IdToUsize>
-where
-    Id: Copy,
-    IdToUsize: Fn(Id) -> usize,
-{
-    fn index_mut(&mut self, index: Id) -> &mut Self::Output {
-        let idx = (self.idtou)(index);
-        &mut self.items[idx]
-    }
-}
-
 fn parse(input: &str) -> Result<(WorkFlows, Vec<Part>, WorkFlowId)> {
     let (workflows_str, parts_str) = input.split_once("\n\n").unwrap();
 
@@ -221,7 +158,13 @@ fn parse(input: &str) -> Result<(WorkFlows, Vec<Part>, WorkFlowId)> {
 
     let in_id = idgen.id_of("in");
 
-    Ok((WorkFlows { flows: idgen.items }, parts, in_id))
+    Ok((
+        WorkFlows {
+            flows: idgen.into_items(),
+        },
+        parts,
+        in_id,
+    ))
 }
 
 fn part1((workflows, parts, start): &(WorkFlows, Vec<Part>, WorkFlowId)) -> u32 {
