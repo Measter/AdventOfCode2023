@@ -1,6 +1,9 @@
 use std::ops::{Index, IndexMut};
 
-use aoc_lib::{misc::IdGen, Bench, BenchResult, Day, NoError, ParseResult, UserError};
+use aoc_lib::{
+    misc::{IdGen, IdType},
+    Bench, BenchResult, Day, NoError, ParseResult, UserError,
+};
 use color_eyre::{Report, Result};
 
 pub const DAY: Day = Day {
@@ -55,6 +58,15 @@ enum RuleCondition {
 
 #[derive(Debug, Clone, Copy)]
 struct WorkFlowId(usize);
+impl IdType for WorkFlowId {
+    fn from_usize(i: usize) -> Self {
+        Self(i)
+    }
+
+    fn to_usize(self) -> usize {
+        self.0
+    }
+}
 
 #[derive(Debug, Clone, Copy)]
 enum RuleOutput {
@@ -90,7 +102,7 @@ impl Index<WorkFlowId> for WorkFlows {
 fn parse(input: &str) -> Result<(WorkFlows, Vec<Part>, WorkFlowId)> {
     let (workflows_str, parts_str) = input.split_once("\n\n").unwrap();
 
-    let mut idgen: IdGen<'_, WorkFlow, _, _, _> = IdGen::new(WorkFlowId, |i| i.0);
+    let mut idgen = IdGen::<WorkFlow, _>::new();
     for wf in workflows_str.lines().map(str::trim) {
         let (name, rules) = wf.split_once('{').unwrap();
         let rules = rules.strip_suffix('}').unwrap();

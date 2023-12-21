@@ -3,7 +3,10 @@ use std::{
     ops::{Index, Not},
 };
 
-use aoc_lib::{misc::IdGen, Bench, BenchResult, Day, NoError, ParseResult, UserError};
+use aoc_lib::{
+    misc::{IdGen, IdType},
+    Bench, BenchResult, Day, NoError, ParseResult, UserError,
+};
 use color_eyre::{Report, Result};
 use smallvec::SmallVec;
 
@@ -30,6 +33,15 @@ fn run_parse(input: &str, b: Bench) -> BenchResult {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 struct ModuleId(u8);
+impl IdType for ModuleId {
+    fn from_usize(i: usize) -> Self {
+        Self(i as u8)
+    }
+
+    fn to_usize(self) -> usize {
+        self.0 as usize
+    }
+}
 
 #[derive(Debug, Clone, Copy)]
 enum ModuleType {
@@ -70,7 +82,7 @@ impl Index<ModuleId> for ModuleSystem {
 }
 
 fn parse(input: &str) -> Result<ModuleSystem> {
-    let mut modules = IdGen::<Module, _, _, _>::new(|id| ModuleId(id as u8), |id| id.0 as usize);
+    let mut modules = IdGen::<Module, _>::new();
 
     for line in input.trim().lines().map(str::trim) {
         let (kind_name, outputs) = line.split_once(" -> ").unwrap();
